@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Distribuidora.Application\Distribuidora.Application.csproj" />
+    <ProjectReference Include="..\Distribuidora.Domain\Distribuidora.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
