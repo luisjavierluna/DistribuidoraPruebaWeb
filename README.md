@@ -7,8 +7,12 @@ Prueba de aplicación ASP.NET Core MVC para gestionar productos. La aplicación 
 
 Este repositorio incluye los siguientes entregables solicitados:
 - Código Fuente
-- Script de la BD (Full): se trata de varios scritps en dentro de la capa Distribuidora.Persistence > Database. Estos se ejecutan automaticamente al iniciar la API.
+- Script de la BD (Full): se trata de varios scritps dentro de este mismo repo y rama. La ruta es DistribuidoraPruebaWeb/Distribuidora.Persistence/Database/ dentro las carpetas Migrations y StoredProcedures tienen los scripts, estos se ejecutan automaticamente al iniciar la API.
 - Manual de usuario sencillo. Se muestra más abajo en este mismo readme
+- Carpeta de publicados para IIS7.5 o superior: agrego link de onedrive para descargar la carpeta comprimida en zip: https://1drv.ms/u/c/fcffb5c52c681bf2/IQAZUtnDHmbdQ5d-33tDiEloAXACcUCyPxPb5xFcoth17hQ?e=crvARr
+
+El repositorio no incluye lo siguiente:
+- Manual de Instalación sobre IIS 7.5 o superior: la razón es que no se tiene experiencia instalando sobre IIS, sólo se tiene experiencia desplegando en Azure.
 
 ---
 
