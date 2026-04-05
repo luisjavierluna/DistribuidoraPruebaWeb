@@ -25,25 +25,33 @@
 
         <div class="filter-row">
             <div class="form-control">
-                <label for="tipoProducto" class="form-label">Tipo Producto</label>
-                <select class="form-select" id="tipoProducto" name="tipoProducto" required>
-                    @{
-                        var tiposProducto = new[] { "Limpieza", "Higiene", "Alimentos", "Bebidas" };
-                    }
+                <label for="productTypeId" class="form-label">Tipo Producto</label>
+                <select class="form-select" id="productTypeId" name="productTypeId" required>
                     <option value="">Seleccionar...</option>
-                    @foreach (var tipo in tiposProducto)
+                    @{
+                        var tiposProducto = (List<Distribuidora.Application.DTOs.ProductTypeDto>)(ViewBag.TiposProducto ?? new List<Distribuidora.Application.DTOs.ProductTypeDto>());
+                        var productTypeId = Model.Id == 0 ? 0 : (tiposProducto.FirstOrDefault(t => t.Name == Model.TipoProducto)?.Id ?? 0);
+                    }
+                    @foreach (var tipo in tiposProducto.OrderBy(t => t.Name))
                     {
-                        if (Model.TipoProducto == tipo)
+                        if (productTypeId == tipo.Id)
                         {
-                            <text><option value="@tipo" selected="selected">@tipo</option></text>
+                            <option value="@tipo.Id" selected>@tipo.Name</option>
                         }
                         else
                         {
-                            <text><option value="@tipo">@tipo</option></text>
+                            <option value="@tipo.Id">@tipo.Name</option>
                         }
                     }
                 </select>
             </div>
+            <div class="form-control">
+                <label for="precio" class="form-label">Precio</label>
+                <input type="number" class="form-control" id="precio" name="precio" step="0.01" value="@Model.Precio" required>
+            </div>
+        </div>
+
+        <div class="filter-row">
             <div class="form-control">
                 <label for="esActivo" class="form-label">Es Activo</label>
                 <div class="form-check mt-2">

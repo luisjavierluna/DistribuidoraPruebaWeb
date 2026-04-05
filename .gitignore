@@ -487,3 +487,5 @@ appsettings.Development.json
 run.cmd
 run.sh
 tasks.json
+settings.json
+run-app.bat

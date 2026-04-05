@@ -16,19 +16,19 @@
                 <label for="tipoProducto" class="form-label">Tipo de Producto</label>
                 <select class="form-select" id="tipoProducto" name="tipoProducto">
                     @{
-                        var tiposProducto = new[] { "Limpieza", "Higiene", "Alimentos", "Bebidas" };
+                        var tiposProducto = (List<Distribuidora.Application.DTOs.ProductTypeDto>)(ViewBag.TiposProducto ?? new List<Distribuidora.Application.DTOs.ProductTypeDto>());
                         var tipoSeleccionado = Context.Request.Query["tipoProducto"].ToString();
                     }
                     <option value="">Seleccionar...</option>
-                    @foreach (var tipo in tiposProducto)
+                    @foreach (var tipo in tiposProducto.OrderBy(t => t.Name))
                     {
-                        if (tipo == tipoSeleccionado)
+                        if (tipoSeleccionado == tipo.Id.ToString())
                         {
-                            <text><option value="@tipo" selected="selected">@tipo</option></text>
+                            <option value="@tipo.Id" selected>@tipo.Name</option>
                         }
                         else
                         {
-                            <text><option value="@tipo">@tipo</option></text>
+                            <option value="@tipo.Id">@tipo.Name</option>
                         }
                     }
                 </select>

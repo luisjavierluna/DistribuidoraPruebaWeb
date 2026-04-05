@@ -41,22 +41,27 @@ namespace WebAppMVC.Controllers
                 }
 
                 // Mapeamos DTOs a modelos de vista
-                var productos = productosDtos.Select(p => new Producto
+                var productos = productosFiltrados.Select(p => new Producto
                 {
                     Id = p.Id,
                     Clave = p.Code,
                     Nombre = p.Name,
+                    ProductTypeId = p.ProductTypeId,
                     TipoProducto = p.ProductTypeName ?? "Sin tipo",
                     EsActivo = p.Active,
                     Precio = p.Price ?? 0,
                     Proveedores = new List<Proveedor>()
                 }).ToList();
 
+                // Pasar tipos de producto a la vista para el dropdown
+                ViewBag.TiposProducto = await ObtenerTiposProducto();
+
                 return View(productos);
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error al obtener productos: {ex.Message}");
+                ViewBag.TiposProducto = new List<ProductTypeDto>();
                 return View(new List<Producto>());
             }
         }
@@ -82,6 +87,7 @@ namespace WebAppMVC.Controllers
                     Id = productoDto.Id,
                     Clave = productoDto.Code,
                     Nombre = productoDto.Name,
+                    ProductTypeId = productoDto.ProductTypeId,
                     TipoProducto = productoDto.ProductTypeName ?? "Sin tipo",
                     EsActivo = productoDto.Active,
                     Precio = productoDto.Price ?? 0,
@@ -108,6 +114,13 @@ namespace WebAppMVC.Controllers
         {
             try
             {
+                if (producto.ProductTypeId <= 0)
+                {
+                    ModelState.AddModelError("productTypeId", "Debe seleccionar un tipo de producto");
+                    ViewBag.TiposProducto = await ObtenerTiposProducto();
+                    return View(producto);
+                }
+
                 if (id == 0)
                 {
                     // Crear nuevo producto
@@ -115,7 +128,7 @@ namespace WebAppMVC.Controllers
                     {
                         Code = producto.Clave ?? "",
                         Name = producto.Nombre ?? "",
-                        ProductTypeId = 1, // Por defecto, se debe enviar desde la vista
+                        ProductTypeId = producto.ProductTypeId,
                         Price = producto.Precio
                     };
 
@@ -129,7 +142,7 @@ namespace WebAppMVC.Controllers
                         Id = id,
                         Code = producto.Clave ?? "",
                         Name = producto.Nombre ?? "",
-                        ProductTypeId = 1, // Por defecto, se debe enviar desde la vista
+                        ProductTypeId = producto.ProductTypeId,
                         Price = producto.Precio
                     };
 
