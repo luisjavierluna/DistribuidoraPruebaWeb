@@ -29,3 +29,76 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+.section-header {
+    display: flex;
+    width: 100%;
+    height: 80px;
+    background-color: #78D9FB;
+    border-bottom: 2px solid #A4A4A4;
+}
+
+.block-border {
+    border: 1.5px solid #A4A4A4;
+    opacity: 1;
+    margin: 50px;
+}
+
+.container {
+    gap: 50px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.filter-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 50px;
+}
+
+.filter-row .form-control {
+    display: flex;
+    height: 40px;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    align-items: center;
+    gap: 20px;
+    border: 1px solid transparent
+}
+
+.filter-row .form-control label {
+    padding: 0;
+    margin: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    font-size: 20px;
+    min-width: fit-content;    ;
+}
+
+.filter-row .form-control input {
+    border: 1px solid black;
+}
+
+.filter-row .form-control .form-select {
+    border: 1px solid black;
+    height: 100%;
+    padding: 0.375rem 0.75rem;
+}
+
+.form-button {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.form-button button,
+.form-button a {
+    font-size: 20px;
+}

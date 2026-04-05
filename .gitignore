@@ -480,3 +480,8 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Windows batch files and PowerShell scripts
+run.cmd
+run.sh
+tasks.json
