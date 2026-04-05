@@ -482,6 +482,8 @@ $RECYCLE.BIN/
 *.swp
 
 # Windows batch files and PowerShell scripts
+appsettings.json
+appsettings.Development.json
 run.cmd
 run.sh
 tasks.json
