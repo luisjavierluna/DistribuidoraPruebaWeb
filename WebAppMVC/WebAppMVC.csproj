@@ -7,7 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Distribuidora.Application\Distribuidora.Application.csproj" />
+    <ProjectReference Include="..\Distribuidora.Persistence\Distribuidora.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

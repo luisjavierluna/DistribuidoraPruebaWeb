@@ -11,4 +11,12 @@
     <ProjectReference Include="..\Distribuidora.Domain\Distribuidora.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Database\Data\" />
+    <Folder Include="Database\Migrations\" />
+    <Folder Include="Database\StoredProcedures\" />
+    <Folder Include="Connections\" />
+    <Folder Include="Repositories\" />
+  </ItemGroup>
+
 </Project>
