@@ -5,39 +5,38 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Agregar Proveedor</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="proveedorForm">
+                    <input type="hidden" id="psId" name="psId" value="0">
+                    <input type="hidden" id="productId" name="productId" value="0">
+
                     <div class="mb-3">
-                        <label for="nombre" class="form-label">Proveedor</label>
-                        <select class="form-select" id="nombre" name="nombre" required>
+                        <label for="supplierId" class="form-label">Proveedor</label>
+                        <select class="form-select" id="supplierId" name="supplierId" required>
                             <option value="">Seleccionar...</option>
-                            <option value="Abarrotera Universal">Abarrotera Universal</option>
-                            <option value="Distribuidor Mexico">Distribuidor Mexico</option>
-                            <option value="Abarrottes a Granel Ruiz">Abarrottes a Granel Ruiz</option>
-                            <option value="Surtidra La Morena">Surtidra La Morena</option>
-                            <option value="Otro">Otro</option>
                         </select>
                     </div>
 
                     <div class="mb-3">
-                        <label for="claveProducto" class="form-label">Clave Producto</label>
-                        <input type="text" class="form-control" id="claveProducto" name="claveProducto" required>
+                        <label for="supplierProductCode" class="form-label">Clave Producto</label>
+                        <input type="text" class="form-control" id="supplierProductCode" name="supplierProductCode" placeholder="Código del proveedor" required>
                     </div>
 
                     <div class="mb-3">
-                        <label for="costo" class="form-label">Costo</label>
+                        <label for="cost" class="form-label">Costo</label>
                         <div class="input-group">
                             <span class="input-group-text">$</span>
-                            <input type="number" class="form-control" id="costo" name="costo" step="0.01" min="0" required>
+                            <input type="number" class="form-control" id="cost" name="cost" step="0.01" min="0" placeholder="0.00" required>
                         </div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="guardarProveedor()">Guarda</button>
+                <button type="button" class="btn btn-primary" onclick="guardarProveedor()">Guardar</button>
             </div>
         </div>
     </div>

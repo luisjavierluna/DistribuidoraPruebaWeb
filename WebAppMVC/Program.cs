@@ -9,8 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // Get connection string
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? "Server=.\\SQLEXPRESS;Database=DistribuidoraDb;Integrated Security=True;Encrypt=False;TrustServerCertificate=True;Connection Timeout=15;";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 // Registrar MigrationService para inyección de dependencias
 builder.Services.AddScoped<IMigrationService, MigrationService>();
@@ -28,6 +27,7 @@ builder.Services.AddScoped<IUnitOfWork>(sp => new UnitOfWork(connectionString));
 builder.Services.AddScoped<ProductApplicationService>();
 builder.Services.AddScoped<SupplierApplicationService>();
 builder.Services.AddScoped<ProductTypeApplicationService>();
+builder.Services.AddScoped<ProductSupplierApplicationService>();
 
 var app = builder.Build();
 

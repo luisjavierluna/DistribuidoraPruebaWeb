@@ -2,15 +2,13 @@
 
 @{
     ViewData["Title"] = Model.Id == 0 ? "Crear Producto" : "Editar Producto";
-    bool esCreacion = Model.Id == 0;
-    string accion = esCreacion ? "Create" : "Edit";
 }
 
 <div class="container">
-    <h2 class="mb-4">@(esCreacion ? "Crear Producto" : "Editar Producto")</h2>
+    <h2 class="mb-4">@(Model.Id == 0 ? "Crear Producto" : "Editar Producto")</h2>
 
-    <form method="post" action="@Url.Action(accion, "Home")" class="form">
-        <input type="hidden" name="id" value="@Model.Id">
+    <form method="post" action="@Url.Action("Edit", "Home")" class="form">
+        <input type="hidden" id="productId" name="id" value="@Model.Id">
 
         <div class="filter-row">
             <div class="form-control">
@@ -30,11 +28,10 @@
                     <option value="">Seleccionar...</option>
                     @{
                         var tiposProducto = (List<Distribuidora.Application.DTOs.ProductTypeDto>)(ViewBag.TiposProducto ?? new List<Distribuidora.Application.DTOs.ProductTypeDto>());
-                        var productTypeId = Model.Id == 0 ? 0 : (tiposProducto.FirstOrDefault(t => t.Name == Model.TipoProducto)?.Id ?? 0);
                     }
                     @foreach (var tipo in tiposProducto.OrderBy(t => t.Name))
                     {
-                        if (productTypeId == tipo.Id)
+                        if (Model.ProductTypeId == tipo.Id)
                         {
                             <option value="@tipo.Id" selected>@tipo.Name</option>
                         }
@@ -68,11 +65,11 @@
 
         <hr>
 
-        <!-- Sección de Proveedores -->
-        <h4 class="mb-3">Proveedores</h4>
-
-        @if (Model.Proveedores != null && Model.Proveedores.Count > 0)
+        <!-- Sección de Proveedores - Solo se muestra si el producto ya existe -->
+        @if (Model.Id > 0)
         {
+            <h4 class="mb-3">Proveedores</h4>
+
             <div class="table-responsive mb-3">
                 <table class="table table-striped table-hover">
                     <thead class="table-light">
@@ -85,40 +82,23 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var proveedor in Model.Proveedores)
-                        {
-                            <tr>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#agregarProveedorModal" onclick="editarProveedor(@proveedor.Id)">
-                                        ✏️
-                                    </button>
-                                </td>
-                                <td>@proveedor.Nombre</td>
-                                <td>@proveedor.ClaveProducto</td>
-                                <td>$@proveedor.Costo.ToString("F2")</td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-light" onclick="eliminarProveedor(@proveedor.Id)">
-                                        <span style="color: red; font-weight: bold;">✕</span>
-                                    </button>
-                                </td>
-                            </tr>
-                        }
+                        <!-- Los proveedores se cargan dinámicamente aquí -->
                     </tbody>
                 </table>
             </div>
+
+            <div class="form-button">
+                <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#agregarProveedorModal" onclick="nuevoProveedor()">
+                    Agregar Proveedor
+                </button>
+            </div>
+
+            <hr>
         }
-
-        <div class="form-button">
-            <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#agregarProveedorModal" onclick="nuevoProveedor()">
-                Agregar Proveedor
-            </button>
-        </div>
-
-        <hr>
 
         <!-- Botones de guardado -->
         <div class="form-button">
-            <button type="submit" class="btn btn-primary">@(esCreacion ? "Crear" : "Guardar")</button>
+            <button type="submit" class="btn btn-primary">@(Model.Id == 0 ? "Crear" : "Guardar")</button>
             <a href="@Url.Action("Index", "Home")" class="btn btn-secondary">Cancelar</a>
         </div>
     </form>
@@ -129,34 +109,205 @@
 
 @section Scripts {
     <script>
-        function nuevoProveedor() {
-            document.getElementById('proveedorForm').reset();
-            document.getElementById('modalTitle').textContent = 'Agregar Proveedor';
-        }
+        // Cargar proveedores y lista al abrir la página
+        document.addEventListener('DOMContentLoaded', async function () {
+            // Cargar dropdown de proveedores
+            await cargarProveedoresDisponibles();
+            
+            // Cargar tabla de proveedores del producto
+            const productId = document.getElementById('productId')?.value || @Model.Id;
+            if (productId > 0) {
+                await cargarProveedoresProducto(productId);
+            }
+        });
 
-        function editarProveedor(id) {
-            document.getElementById('modalTitle').textContent = 'Editar Proveedor';
-        }
-
-        function eliminarProveedor(id) {
-            if (confirm('¿Estás seguro de que deseas eliminar este proveedor?')) {
-                alert('Proveedor eliminado (por implementar)');
+        // Cargar lista de proveedores disponibles para el dropdown
+        async function cargarProveedoresDisponibles() {
+            try {
+                const response = await fetch('/api/suppliers');
+                if (!response.ok) throw new Error('Error al obtener proveedores');
+                
+                const suppliers = await response.json();
+                const select = document.getElementById('supplierId');
+                select.innerHTML = '<option value="">Seleccionar...</option>';
+                
+                suppliers.forEach(supplier => {
+                    const option = document.createElement('option');
+                    option.value = supplier.id;
+                    option.textContent = supplier.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cargar proveedores');
             }
         }
 
-        function guardarProveedor() {
-            const nombre = document.getElementById('nombre').value;
-            const clave = document.getElementById('claveProducto').value;
-            const costo = document.getElementById('costo').value;
+        // Cargar proveedores asociados al producto
+        async function cargarProveedoresProducto(productId) {
+            try {
+                const response = await fetch(`/api/product-suppliers/${productId}`);
+                if (!response.ok) throw new Error('Error al obtener proveedores');
+                
+                const proveedores = await response.json();
+                const tbody = document.querySelector('table tbody');
+                
+                if (!tbody) return;
+                
+                tbody.innerHTML = ''; // Limpiar tabla
+                
+                if (proveedores.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Sin proveedores asignados</td></tr>';
+                    return;
+                }
+                
+                proveedores.forEach(proveedor => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-light" 
+                                    data-bs-toggle="modal" data-bs-target="#agregarProveedorModal" 
+                                    onclick="editarProveedor(${proveedor.id})">
+                                ✏️
+                            </button>
+                        </td>
+                        <td>${proveedor.supplierName}</td>
+                        <td>${proveedor.supplierProductCode}</td>
+                        <td style="width: 100px; text-align: center;">$${proveedor.cost.toFixed(2)}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-light" 
+                                    onclick="eliminarProveedor(${proveedor.id})">
+                                <span style="color: red; font-weight: bold;">✕</span>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
 
-            if (!nombre || !clave || !costo) {
-                alert('Por favor completa todos los campos');
+        // Abrir modal para crear nuevo proveedor
+        function nuevoProveedor() {
+            document.getElementById('psId').value = '0';
+            document.getElementById('proveedorForm').reset();
+            document.getElementById('modalTitle').textContent = 'Agregar Proveedor';
+            document.getElementById('supplierId').disabled = false;
+            document.querySelector('.btn-primary').textContent = 'Guardar';
+        }
+
+        // Cargar datos para editar un proveedor existente
+        async function editarProveedor(id) {
+            try {
+                const response = await fetch(`/api/product-supplier/${id}`);
+                if (!response.ok) throw new Error('Error al obtener proveedor');
+                
+                const proveedor = await response.json();
+                
+                document.getElementById('psId').value = proveedor.id;
+                document.getElementById('supplierId').value = proveedor.supplierId;
+                document.getElementById('supplierProductCode').value = proveedor.supplierProductCode || '';
+                document.getElementById('cost').value = proveedor.cost.toFixed(2);
+                
+                document.getElementById('modalTitle').textContent = 'Editar Proveedor';
+                document.getElementById('supplierId').disabled = true; // No permitir cambiar proveedor al editar
+                document.querySelector('.btn-primary').textContent = 'Actualizar';
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cargar datos del proveedor');
+            }
+        }
+
+        // Guardar o actualizar proveedor
+        async function guardarProveedor() {
+            const psId = parseInt(document.getElementById('psId').value);
+            const productIdField = document.getElementById('productId');
+            const productId = productIdField ? parseInt(productIdField.value) : @Model.Id;
+            
+            if (productId <= 0) {
+                alert('Debe guardar el producto primero antes de agregar proveedores');
+                return;
+            }
+            
+            const supplierId = parseInt(document.getElementById('supplierId').value);
+            const supplierProductCode = document.getElementById('supplierProductCode').value.trim();
+            const cost = parseFloat(document.getElementById('cost').value);
+
+            // Validaciones
+            if (!supplierId) {
+                alert('Debe seleccionar un proveedor');
+                return;
+            }
+            if (!supplierProductCode) {
+                alert('Debe ingresar la clave del producto');
+                return;
+            }
+            if (isNaN(cost) || cost < 0) {
+                alert('Debe ingresar un costo válido');
                 return;
             }
 
-            alert('Proveedor guardado (por implementar)');
-            const modal = bootstrap.Modal.getInstance(document.getElementById('agregarProveedorModal'));
-            modal.hide();
+            try {
+                const response = await fetch('/api/product-supplier/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: psId,
+                        productId: productId,
+                        supplierId: supplierId,
+                        supplierProductCode: supplierProductCode,
+                        cost: cost
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Error al guardar');
+                }
+
+                // Cerrar modal y recargar tabla
+                const modal = bootstrap.Modal.getInstance(document.getElementById('agregarProveedorModal'));
+                modal.hide();
+                
+                // Recargar proveedores del producto
+                await cargarProveedoresProducto(productId);
+                
+                alert('Proveedor guardado correctamente');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Eliminar proveedor
+        async function eliminarProveedor(id) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este proveedor?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/product-supplier/${id}/delete`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Error al eliminar');
+                }
+
+                // Recargar tabla
+                const productIdField = document.getElementById('productId');
+                const productId = productIdField ? parseInt(productIdField.value) : @Model.Id;
+                await cargarProveedoresProducto(productId);
+                
+                alert('Proveedor eliminado correctamente');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
+            }
         }
     </script>
 }

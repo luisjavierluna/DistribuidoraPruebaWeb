@@ -78,12 +78,12 @@ namespace Distribuidora.Persistence.Data
             try
             {
                 // Debug: mostrar rutas y conexión
-                //Console.WriteLine($"\n📂 Rutas de scripts:");
-                //Console.WriteLine($"   Migraciones: {_migrationsPath}");
-                //Console.WriteLine($"   SPs: {_storedProceduresPath}");
-                //Console.WriteLine($"   Archivos encontrados: {GetScriptFiles(_migrationsPath).Count + GetScriptFiles(_storedProceduresPath).Count}");
-                //Console.WriteLine($"\n🔌 Cadena de conexión:");
-                //Console.WriteLine($"   {_connectionString}\n");
+                // Console.WriteLine($"\n Rutas de scripts:");
+                // Console.WriteLine($"   Migraciones: {_migrationsPath}");
+                // Console.WriteLine($"   SPs: {_storedProceduresPath}");
+                // Console.WriteLine($"   Archivos encontrados: {GetScriptFiles(_migrationsPath).Count + GetScriptFiles(_storedProceduresPath).Count}");
+                // Console.WriteLine($"\n Cadena de conexión:");
+                // Console.WriteLine($"   {_connectionString}\n");
 
                 // Verificar si la base de datos existe
                 var databaseExists = await DatabaseExistsAsync();
@@ -131,7 +131,7 @@ namespace Distribuidora.Persistence.Data
 
                 if (allScripts.Count == 0)
                 {
-                    result.Message = "✓ Todas las migraciones ya han sido ejecutadas.";
+                    result.Message = "Todas las migraciones ya han sido ejecutadas.";
                     return result;
                 }
 
@@ -141,17 +141,17 @@ namespace Distribuidora.Persistence.Data
                     var scriptName = Path.GetFileName(scriptPath);
                     try
                     {
-                        //Console.WriteLine($"   ⏳ Ejecutando: {scriptName}");
+                        // Console.WriteLine($"   ⏳ Ejecutando: {scriptName}");
                         await ExecuteScriptAsync(scriptPath);
                         await LogMigrationAsync(scriptName);
                         result.ScriptsExecuted++;
-                        //Console.WriteLine($"   ✓ {scriptName} - OK");
+                        // Console.WriteLine($"   ✓ {scriptName} - OK");
                     }
                     catch (Exception ex)
                     {
                         result.ScriptsFailed++;
                         result.Success = false;
-                        //Console.WriteLine($"   ✗ {scriptName} - ERROR: {ex.Message}");
+                        // Console.WriteLine($"   ✗ {scriptName} - ERROR: {ex.Message}");
                         result.Message += $"\n✗ Error en {scriptName}: {ex.Message}";
                     }
                 }
@@ -177,8 +177,8 @@ namespace Distribuidora.Persistence.Data
                 var connectionStringBuilder = new SqlConnectionStringBuilder(_connectionString);
                 var masterConnectionString = _connectionString.Replace(connectionStringBuilder.InitialCatalog, "master");
                 
-                //Console.WriteLine($"   📡 Verificando BD (conectando a 'master')...");
-                //Console.WriteLine($"      Conexión: {masterConnectionString}");
+                // Console.WriteLine($"      Verificando BD (conectando a 'master')...");
+                // Console.WriteLine($"      Conexión: {masterConnectionString}");
 
                 using (var connection = new SqlConnection(masterConnectionString))
                 {
@@ -189,13 +189,13 @@ namespace Distribuidora.Persistence.Data
                     
                     var result = await cmd.ExecuteScalarAsync();
                     bool exists = result != null;
-                    //Console.WriteLine($"   ✓ BD '{connectionStringBuilder.InitialCatalog}' existe: {exists}");
+                    // Console.WriteLine($"   BD '{connectionStringBuilder.InitialCatalog}' existe: {exists}");
                     return exists;
                 }
             }
             catch (Exception ex)
             {
-                //Console.WriteLine($"   ⚠ No se pudo verificar BD: {ex.Message}");
+                Console.WriteLine($"   No se pudo verificar BD: {ex.Message}");
                 // Si no podemos verificar, asumimos que existe
                 return true;
             }
@@ -264,11 +264,11 @@ namespace Distribuidora.Persistence.Data
 
             try
             {
-                //Console.WriteLine($"      📝 Conectando a: {targetDb}");
+                // Console.WriteLine($"      Conectando a: {targetDb}");
                 using (var connection = new SqlConnection(connectionString))
                 {
                     await connection.OpenAsync();
-                    //Console.WriteLine($"      ✓ Conexión abierta a {targetDb}");
+                    // Console.WriteLine($"      Conexión abierta a {targetDb}");
 
                     // Dividir por GO para ejecutar en lotes
                     var batches = scriptContent.Split(new[] { "\nGO", "\r\nGO", "\ngo", "\r\ngo" }, StringSplitOptions.RemoveEmptyEntries);

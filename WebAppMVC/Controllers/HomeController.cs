@@ -12,15 +12,21 @@ namespace WebAppMVC.Controllers
         private readonly ILogger<HomeController> _logger;
         private readonly ProductApplicationService _productService;
         private readonly ProductTypeApplicationService _productTypeService;
+        private readonly ProductSupplierApplicationService _productSupplierService;
+        private readonly SupplierApplicationService _supplierService;
 
         public HomeController(
             ILogger<HomeController> logger,
             ProductApplicationService productService,
-            ProductTypeApplicationService productTypeService)
+            ProductTypeApplicationService productTypeService,
+            ProductSupplierApplicationService productSupplierService,
+            SupplierApplicationService supplierService)
         {
             _logger = logger;
             _productService = productService;
             _productTypeService = productTypeService;
+            _productSupplierService = productSupplierService;
+            _supplierService = supplierService;
         }
 
         public async Task<IActionResult> Index(string clave = "", string tipoProducto = "")
@@ -218,6 +224,166 @@ namespace WebAppMVC.Controllers
             catch
             {
                 return new List<ProductTypeDto>();
+            }
+        }
+
+        // ===== ACCIONES AJAX PARA PROVEEDORES =====
+
+        /// <summary>
+        /// Obtiene todos los proveedores disponibles para el formulario
+        /// </summary>
+        [HttpGet]
+        [Route("api/suppliers")]
+        public async Task<IActionResult> GetSuppliers()
+        {
+            try
+            {
+                var suppliers = await _supplierService.GetAllSuppliersAsync();
+                return Json(suppliers.Select(s => new { id = s.Id, name = s.Name }).ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error al obtener proveedores: {ex.Message}");
+                return StatusCode(500, new { error = "Error al obtener proveedores" });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene los proveedores asociados a un producto
+        /// </summary>
+        [HttpGet]
+        [Route("api/product-suppliers/{productId}")]
+        public async Task<IActionResult> GetProductSuppliers(int productId)
+        {
+            try
+            {
+                if (productId <= 0)
+                    return BadRequest(new { error = "ID de producto inválido" });
+
+                var suppliers = await _productSupplierService.GetSuppliersByProductIdAsync(productId);
+                return Json(suppliers);
+            }
+            catch (InvalidProductException ex)
+            {
+                _logger.LogWarning($"Producto no encontrado: {ex.Message}");
+                return NotFound(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error al obtener proveedores del producto: {ex.Message}");
+                return StatusCode(500, new { error = "Error al obtener proveedores" });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene un proveedor específico por ID (para cargar datos en el modal de edición)
+        /// </summary>
+        [HttpGet]
+        [Route("api/product-supplier/{id}")]
+        public async Task<IActionResult> GetProductSupplier(int id)
+        {
+            try
+            {
+                if (id <= 0)
+                    return BadRequest(new { error = "ID inválido" });
+
+                var supplier = await _productSupplierService.GetProductSupplierByIdAsync(id);
+                if (supplier == null)
+                    return NotFound(new { error = "Relación no encontrada" });
+
+                return Json(supplier);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error al obtener proveedor: {ex.Message}");
+                return StatusCode(500, new { error = "Error al obtener proveedor" });
+            }
+        }
+
+        /// <summary>
+        /// Crea o actualiza un proveedor de un producto
+        /// </summary>
+        [HttpPost]
+        [Route("api/product-supplier/save")]
+        public async Task<IActionResult> SaveProductSupplier([FromBody] SaveProductSupplierRequest request)
+        {
+            try
+            {
+                if (request == null)
+                    return BadRequest(new { error = "Datos inválidos" });
+
+                if (request.ProductId <= 0 || request.SupplierId <= 0)
+                    return BadRequest(new { error = "ProductId y SupplierId son requeridos" });
+
+                ProductSupplierDto result;
+
+                if (request.Id <= 0)
+                {
+                    // Crear nuevo
+                    var createDto = new CreateProductSupplierDto
+                    {
+                        ProductId = request.ProductId,
+                        SupplierId = request.SupplierId,
+                        SupplierProductCode = request.SupplierProductCode,
+                        Cost = request.Cost
+                    };
+                    result = await _productSupplierService.CreateProductSupplierAsync(createDto);
+                }
+                else
+                {
+                    // Actualizar existente
+                    var updateDto = new UpdateProductSupplierDto
+                    {
+                        Id = request.Id,
+                        ProductId = request.ProductId,
+                        SupplierId = request.SupplierId,
+                        SupplierProductCode = request.SupplierProductCode,
+                        Cost = request.Cost
+                    };
+                    result = await _productSupplierService.UpdateProductSupplierAsync(updateDto);
+                }
+
+                return Json(new { success = true, data = result });
+            }
+            catch (InvalidProductException ex)
+            {
+                _logger.LogWarning($"Error de validación: {ex.Message}");
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error al guardar proveedor: {ex.Message}");
+                return StatusCode(500, new { error = "Error al guardar proveedor" });
+            }
+        }
+
+        /// <summary>
+        /// Elimina un proveedor de un producto
+        /// </summary>
+        [HttpPost]
+        [Route("api/product-supplier/{id}/delete")]
+        public async Task<IActionResult> DeleteProductSupplier(int id)
+        {
+            try
+            {
+                if (id <= 0)
+                    return BadRequest(new { error = "ID inválido" });
+
+                var result = await _productSupplierService.DeleteProductSupplierAsync(id);
+                if (!result)
+                    return NotFound(new { error = "Relación no encontrada" });
+
+                return Json(new { success = true });
+            }
+            catch (InvalidProductException ex)
+            {
+                _logger.LogWarning($"Error: {ex.Message}");
+                return NotFound(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error al eliminar proveedor: {ex.Message}");
+                return StatusCode(500, new { error = "Error al eliminar proveedor" });
             }
         }
     }
