@@ -1,12 +1,33 @@
 using Distribuidora.Persistence.Data;
+using Distribuidora.Application.Interfaces.Repositories;
+using Distribuidora.Application.Services;
+using Distribuidora.Persistence.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Get connection string
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? "Server=.\\SQLEXPRESS;Database=DistribuidoraDb;Integrated Security=True;Encrypt=False;TrustServerCertificate=True;Connection Timeout=15;";
+
 // Registrar MigrationService para inyección de dependencias
 builder.Services.AddScoped<IMigrationService, MigrationService>();
+
+// Registrar Repositories (patrón Repository)
+builder.Services.AddScoped<IProductRepository>(sp => new ProductRepository(connectionString));
+builder.Services.AddScoped<ISupplierRepository>(sp => new SupplierRepository(connectionString));
+builder.Services.AddScoped<IProductTypeRepository>(sp => new ProductTypeRepository(connectionString));
+builder.Services.AddScoped<IProductSupplierRepository>(sp => new ProductSupplierRepository(connectionString));
+
+// Registrar UnitOfWork
+builder.Services.AddScoped<IUnitOfWork>(sp => new UnitOfWork(connectionString));
+
+// Registrar Application Services
+builder.Services.AddScoped<ProductApplicationService>();
+builder.Services.AddScoped<SupplierApplicationService>();
+builder.Services.AddScoped<ProductTypeApplicationService>();
 
 var app = builder.Build();
 

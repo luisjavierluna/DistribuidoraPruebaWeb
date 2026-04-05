@@ -1,140 +1,184 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using WebAppMVC.Models;
+using Distribuidora.Application.Services;
+using Distribuidora.Application.DTOs;
+using Distribuidora.Application.Exceptions;
 
 namespace WebAppMVC.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly ProductApplicationService _productService;
+        private readonly ProductTypeApplicationService _productTypeService;
 
-        // Datos hardcodeados
-        private static List<Producto> productos = new List<Producto>
-        {
-            new Producto
-            {
-                Id = 1,
-                Clave = "PIN0259",
-                Nombre = "Pinol Limpiador 360 ml",
-                TipoProducto = "Limpieza",
-                EsActivo = true,
-                Precio = 20.50m,
-                Proveedores = new List<Proveedor>
-                {
-                    new Proveedor { Id = 1, Nombre = "Distribuidor Mexico", ClaveProducto = "PINOL360", Costo = 20.50m },
-                    new Proveedor { Id = 2, Nombre = "Abarrottes a Granel Ruiz", ClaveProducto = "P123450", Costo = 21.00m },
-                    new Proveedor { Id = 3, Nombre = "Surtidra La Morena", ClaveProducto = "LIMP-PINOL01", Costo = 19.80m }
-                }
-            },
-            new Producto
-            {
-                Id = 2,
-                Clave = "PIN0152",
-                Nombre = "Pinol Limpiador 250 ml",
-                TipoProducto = "Limpieza",
-                EsActivo = true,
-                Precio = 15.75m,
-                Proveedores = new List<Proveedor>
-                {
-                    new Proveedor { Id = 4, Nombre = "Distribuidor Mexico", ClaveProducto = "PINOL250", Costo = 15.75m }
-                }
-            },
-            new Producto
-            {
-                Id = 3,
-                Clave = "JBC001",
-                Nombre = "Jabón en barra",
-                TipoProducto = "Higiene",
-                EsActivo = true,
-                Precio = 5.50m,
-                Proveedores = new List<Proveedor>
-                {
-                    new Proveedor { Id = 5, Nombre = "Abarrottes a Granel Ruiz", ClaveProducto = "JAB001", Costo = 5.50m }
-                }
-            }
-        };
-
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(
+            ILogger<HomeController> logger,
+            ProductApplicationService productService,
+            ProductTypeApplicationService productTypeService)
         {
             _logger = logger;
+            _productService = productService;
+            _productTypeService = productTypeService;
         }
 
-        public IActionResult Index(string clave = "", string tipoProducto = "")
+        public async Task<IActionResult> Index(string clave = "", string tipoProducto = "")
         {
-            var productosFiltrados = productos;
-
-            if (!string.IsNullOrEmpty(clave))
+            try
             {
-                productosFiltrados = productosFiltrados.Where(p => p.Clave != null && p.Clave.Contains(clave, StringComparison.OrdinalIgnoreCase)).ToList();
-            }
+                var productosDtos = await _productService.GetAllProductsAsync();
+                var productosFiltrados = productosDtos.ToList();
 
-            if (!string.IsNullOrEmpty(tipoProducto))
+                if (!string.IsNullOrEmpty(clave))
+                {
+                    productosFiltrados = productosFiltrados.Where(p => p.Code.Contains(clave, StringComparison.OrdinalIgnoreCase)).ToList();
+                }
+
+                if (!string.IsNullOrEmpty(tipoProducto) && int.TryParse(tipoProducto, out int typeId))
+                {
+                    productosFiltrados = productosFiltrados.Where(p => p.ProductTypeId == typeId).ToList();
+                }
+
+                // Mapeamos DTOs a modelos de vista
+                var productos = productosDtos.Select(p => new Producto
+                {
+                    Id = p.Id,
+                    Clave = p.Code,
+                    Nombre = p.Name,
+                    TipoProducto = p.ProductTypeName ?? "Sin tipo",
+                    EsActivo = p.Active,
+                    Precio = p.Price ?? 0,
+                    Proveedores = new List<Proveedor>()
+                }).ToList();
+
+                return View(productos);
+            }
+            catch (Exception ex)
             {
-                productosFiltrados = productosFiltrados.Where(p => p.TipoProducto != null && p.TipoProducto.Contains(tipoProducto, StringComparison.OrdinalIgnoreCase)).ToList();
+                _logger.LogError($"Error al obtener productos: {ex.Message}");
+                return View(new List<Producto>());
             }
-
-            return View(productosFiltrados);
         }
 
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            var producto = productos.FirstOrDefault(p => p.Id == id);
-            if (producto == null)
+            try
             {
+                if (id == 0)
+                {
+                    // Nuevo producto
+                    var nuevoProducto = new Producto { Id = 0 };
+                    ViewBag.TiposProducto = await ObtenerTiposProducto();
+                    return View(nuevoProducto);
+                }
+
+                var productoDto = await _productService.GetProductByIdAsync(id);
+                if (productoDto == null)
+                    return NotFound();
+
+                var producto = new Producto
+                {
+                    Id = productoDto.Id,
+                    Clave = productoDto.Code,
+                    Nombre = productoDto.Name,
+                    TipoProducto = productoDto.ProductTypeName ?? "Sin tipo",
+                    EsActivo = productoDto.Active,
+                    Precio = productoDto.Price ?? 0,
+                    Proveedores = new List<Proveedor>()
+                };
+
+                ViewBag.TiposProducto = await ObtenerTiposProducto();
+                return View(producto);
+            }
+            catch (InvalidProductException ex)
+            {
+                _logger.LogWarning($"Producto no encontrado: {ex.Message}");
                 return NotFound();
             }
-            return View(producto);
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error al obtener producto: {ex.Message}");
+                return StatusCode(500, "Error al obtener el producto");
+            }
         }
 
         [HttpPost]
-        public IActionResult Edit(int id, Producto producto)
+        public async Task<IActionResult> Edit(int id, Producto producto)
         {
-            var productoExistente = productos.FirstOrDefault(p => p.Id == id);
-            if (productoExistente == null)
+            try
             {
-                return NotFound();
+                if (id == 0)
+                {
+                    // Crear nuevo producto
+                    var createDto = new CreateProductDto
+                    {
+                        Code = producto.Clave ?? "",
+                        Name = producto.Nombre ?? "",
+                        ProductTypeId = 1, // Por defecto, se debe enviar desde la vista
+                        Price = producto.Precio
+                    };
+
+                    await _productService.CreateProductAsync(createDto);
+                }
+                else
+                {
+                    // Actualizar producto existente
+                    var updateDto = new UpdateProductDto
+                    {
+                        Id = id,
+                        Code = producto.Clave ?? "",
+                        Name = producto.Nombre ?? "",
+                        ProductTypeId = 1, // Por defecto, se debe enviar desde la vista
+                        Price = producto.Precio
+                    };
+
+                    await _productService.UpdateProductAsync(updateDto);
+                }
+
+                return RedirectToAction(nameof(Index));
             }
-
-            productoExistente.Clave = producto.Clave;
-            productoExistente.Nombre = producto.Nombre;
-            productoExistente.TipoProducto = producto.TipoProducto;
-            productoExistente.EsActivo = producto.EsActivo;
-
-            return RedirectToAction(nameof(Index));
+            catch (ProductTypeNotFoundException ex)
+            {
+                _logger.LogWarning($"Tipo de producto no encontrado: {ex.Message}");
+                ModelState.AddModelError("", "El tipo de producto especificado no existe");
+                ViewBag.TiposProducto = await ObtenerTiposProducto();
+                return View(producto);
+            }
+            catch (InvalidProductException ex)
+            {
+                _logger.LogWarning($"Error de validación: {ex.Message}");
+                ModelState.AddModelError("", ex.Message);
+                ViewBag.TiposProducto = await ObtenerTiposProducto();
+                return View(producto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error al guardar producto: {ex.Message}");
+                ModelState.AddModelError("", "Error al guardar el producto");
+                ViewBag.TiposProducto = await ObtenerTiposProducto();
+                return View(producto);
+            }
         }
 
         public IActionResult Create()
         {
             var nuevoProducto = new Producto { Id = 0 };
-            return View("Edit", nuevoProducto);
+            return RedirectToAction(nameof(Edit), new { id = 0 });
         }
 
-        [HttpPost]
-        public IActionResult Create(Producto producto)
+        public async Task<IActionResult> Delete(int id)
         {
-            if (string.IsNullOrEmpty(producto.Clave) || string.IsNullOrEmpty(producto.Nombre) || string.IsNullOrEmpty(producto.TipoProducto))
+            try
             {
-                return View("Edit", producto);
+                await _productService.DeleteProductAsync(id);
+                return RedirectToAction(nameof(Index));
             }
-
-            // Generar nuevo ID
-            int nuevoId = productos.Max(p => p.Id) + 1;
-            producto.Id = nuevoId;
-            producto.Proveedores = new List<Proveedor>();
-
-            productos.Add(producto);
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        public IActionResult Delete(int id)
-        {
-            var producto = productos.FirstOrDefault(p => p.Id == id);
-            if (producto != null)
+            catch (Exception ex)
             {
-                productos.Remove(producto);
+                _logger.LogError($"Error al eliminar producto: {ex.Message}");
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
         }
 
         public IActionResult Privacy()
@@ -146,6 +190,22 @@ namespace WebAppMVC.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        /// <summary>
+        /// Obtiene lista de tipos de producto para la vista
+        /// </summary>
+        private async Task<List<ProductTypeDto>> ObtenerTiposProducto()
+        {
+            try
+            {
+                var tipos = await _productTypeService.GetAllProductTypesAsync();
+                return tipos.ToList();
+            }
+            catch
+            {
+                return new List<ProductTypeDto>();
+            }
         }
     }
 }
